@@ -1,5 +1,6 @@
-use actix_web::{HttpResponse, Responder, post, get, web::{Redirect, Data,Json}};
+use actix_web::{HttpResponse, Responder, post, get, web::{Redirect, Data}};
 use std::{fs, sync::{Mutex, mpsc}};
+use crate::WebSenders;
 
 const TEN : u8 = 10; 
 
@@ -11,7 +12,7 @@ pub async fn get_index() -> impl Responder {
 }
 
 #[post("/")]
-pub async fn receive_data(req_body: String, data : Data<Mutex<mpsc::Sender<u8>>>) -> Redirect{
+pub async fn receive_data(req_body: String, data : Data<WebSenders>) -> Redirect{
     let parts:Vec<&str>  = req_body.split('&').collect();
     let mut results: Vec<&str>= Vec::<&str>::new();
 
@@ -60,7 +61,20 @@ pub async fn receive_data(req_body: String, data : Data<Mutex<mpsc::Sender<u8>>>
         break 'check final_digit
     };
 
-    data.lock().unwrap().send(servo_level).expect("Couldnt send the data");
+    let led_status = *results.get(2).unwrap();
+    let send_value: bool = led_status == "on";
+
+    data.servo_sender
+        .lock()
+        .unwrap()
+        .send(servo_level)
+        .expect("Couldnt send the servo value");
+
+    data.led_sender
+        .lock()
+        .unwrap()
+        .send(send_value)
+        .expect("Couldnt send the led value");
 
     Redirect::to("/").see_other()
 }
