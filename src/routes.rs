@@ -6,7 +6,7 @@ const TEN : u8 = 10;
 
 #[get("/")]
 pub async fn get_index() -> impl Responder {
-    let index: String = fs::read_to_string("index.html").unwrap();
+    let index: String = fs::read_to_string("index.html").expect("index not found");
 
     HttpResponse::Ok().body(index)
 }

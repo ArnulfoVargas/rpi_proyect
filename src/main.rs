@@ -3,20 +3,35 @@ use actix_web::{HttpServer, App, web::Data };
 use std::{thread, sync::Mutex};
 use std::sync::mpsc;
 
+use rppal::{gpio::Gpio, pwm::{Channel, Pwm}};
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()>{
+    let led_pin:u8 = 15;
+    let led_gpio = Gpio::new().unwrap();
+    let mut led = led_gpio.get(led_pin).unwrap().into_output();
+
+    let servo_pwm = Pwm::new(Channel::Pwm0).unwrap();
+    servo_pwm.set_frequency(50, 1);
+    servo_pwm.enable();
+
     let (tx, sx) = mpsc::channel::<u8>();
     let (tx2, sx2) = mpsc::channel::<bool>();
     
     thread::spawn(move || {
         for level in sx{
-            println!("{}", level);
+            servo_pwm.set_duty_cycle((level as f64) / 12 );
         }
     });
     
     thread::spawn(move || {
-        for led in sx2{
-            println!("{}", led);
+        for is_turned in sx2{
+            if is_turned{
+                led.set_high();
+            }
+            else {
+                led.set_low();
+            }
         }
     });
 
