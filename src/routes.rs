@@ -22,53 +22,8 @@ pub async fn receive_data(req_body: String, data : Data<WebSenders>) -> Redirect
         results.push(res);
     }
 
-    let servo_level: u8 = 'check: {
-        let num: &[u8] = results.get(1).unwrap().as_bytes();
-
-        'first: {
-            if num.len() == 1 {
-                break 'check num.get(0).unwrap() - 48;
-            }
-
-            break 'first;
-        }
-
-        'second: {
-            if num.len() == 0 {
-                break 'check 0;
-            }
-
-            break 'second;
-        }
-
-        let mut final_digit: u8 = 0;
-        let mut results_len: u8 = num.len() as u8 - 1;
-
-        for r in num {
-
-            if results_len == 0{
-                let holder: u8 = *r - 48;
-                final_digit += holder;
-
-                break 'check final_digit
-            }
-
-             let holder: u8 = (*r - 48) * (TEN.pow( results_len as u32));
-             final_digit += holder;
-             results_len -= 1;
-         }
-
-        break 'check final_digit
-    };
-
-    let led_status = *results.get(2).unwrap();
+    let led_status = *results.get(0).unwrap();
     let send_value: bool = led_status == "on";
-
-    data.servo_sender
-        .lock()
-        .unwrap()
-        .send(servo_level)
-        .expect("Couldnt send the servo value");
 
     data.led_sender
         .lock()

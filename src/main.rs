@@ -11,21 +11,10 @@ async fn main() -> std::io::Result<()>{
     let led_gpio = Gpio::new().unwrap();
     let mut led = led_gpio.get(led_pin).unwrap().into_output();
 
-    let servo_pwm = Pwm::new(Channel::Pwm0).unwrap();
-    servo_pwm.set_frequency(50, 1);
-    servo_pwm.enable();
-
-    let (tx, sx) = mpsc::channel::<u8>();
-    let (tx2, sx2) = mpsc::channel::<bool>();
+    let (tx, sx) = mpsc::channel::<bool>();
     
     thread::spawn(move || {
-        for level in sx{
-            servo_pwm.set_duty_cycle((level as f64) / 12 );
-        }
-    });
-    
-    thread::spawn(move || {
-        for is_turned in sx2{
+        for is_turned in sx{
             if is_turned{
                 led.set_high();
             }
@@ -35,7 +24,7 @@ async fn main() -> std::io::Result<()>{
         }
     });
 
-    let data: Data<WebSenders> = Data::new(WebSenders { servo_sender: Mutex::new(tx), led_sender: Mutex::new(tx2) });
+    let data: Data<WebSenders> = Data::new(WebSenders { led_sender: Mutex::new(tx1) });
 
     HttpServer::new(move || {
         App::new()
@@ -49,6 +38,5 @@ async fn main() -> std::io::Result<()>{
 }
 
 pub struct WebSenders {
-    servo_sender: Mutex<mpsc::Sender<u8>>,
-    led_sender  : Mutex<mpsc::Sender<bool>>,
+    led_sender: Mutex<mpsc::Sender<bool>>,
 }
